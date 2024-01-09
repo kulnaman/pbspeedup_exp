@@ -1,0 +1,423 @@
+#!/usr/bin/python3
+import errno
+import os
+import sys
+from io import StringIO
+import time
+import psutil
+c
+import nvgpu
+from enum import Enum, auto
+
+import sh
+
+
+from functools import wraps
+
+toolpath = ""
+
+def eprint(*args, **kwargs):
+    print(*args, file=sys.stderr, **kwargs)
+
+
+def shprint(f):
+    @wraps(f)
+    def wrapped(*args, **kwargs):
+        print(f)
+        print(f(*args, **kwargs))
+    return wrapped
+
+
+buf = StringIO()
+sh.sudo("../../tools/power_tools/powercap-info", "intel-rapl", "-c", "1", "-z", "0", "-U", _out=buf)
+min_pkg_power = 25
+#max_pkg_power = 150
+#max_pkg_power = 240
+max_pkg_power = int(buf.getvalue())// int(1e6)
+
+buf = StringIO()
+sh.sudo("../../tools/power_tools/powercap-info", "intel-rapl", "-c", "0", "-z", "0", "-U", _out=buf)
+max_pkg_power_long = int(buf.getvalue()) // int(1e6)
+#max_pkg_power = 270
+
+#min_dram_power = 30
+#max_dram_power = 120
+buf = StringIO()
+min_dram_power = 5
+sh.sudo("../../tools/power_tools/powercap-info", "intel-rapl", "-c", "0", "-z", "0:0", "-U", _out=buf)
+max_dram_power = int(buf.getvalue()) // int(1e6)
+#max_dram_power = 30
+
+
+min_gpu_power = 125
+max_gpu_power = 300
+
+cpu_power_step = 5
+mem_power_step = 5
+
+
+def default_SM_freq(gpu):
+    if gpu is GPUType.titanv:
+        return 1912
+    elif gpu is GPUType.titanxp:
+        return 1911
+    elif gpu is GPUType.v10032:
+        return 1530
+    else:
+        raise ValueError
+
+def default_memory_freq(gpu):
+    if gpu is GPUType.titanv:
+        return 850
+    elif gpu is GPUType.titanxp:
+        return 5705
+    elif gpu is GPUType.v10032:
+        return 877
+    else:
+        raise ValueError
+
+
+def mem_offset_range(gpu):
+    if gpu is GPUType.titanv:
+        return range(0,500+1, 50)
+    elif gpu is GPUType.titanxp:
+        return range(-2000, 1600, 100)
+    elif gpu is GPUType.v10032:
+        #FIXME i have no idea if it actually mimics titanv
+        return range(0,500+1, 50)
+    else:
+        raise ValueError
+
+def generate_cpu_experiments():
+    ret = []
+    cpufreq = ExperimentConfig.get_max_cpu_freq()
+    
+    #cpu_ranges = list(range(min_pkg_power, max_pkg_power//2, cpu_power_step)) + list(range(max_pkg_power//2, max_pkg_power, cpu_power_step * 2))
+
+    for threads in [10, 20, 30, 40]:
+        for pkg_power in range(95, min_pkg_power - cpu_power_step, -cpu_power_step):
+        #for pkg_power in range(135, min_pkg_power - cpu_power_step, -cpu_power_step):
+    #for pkg_power in range(max_pkg_power, min_pkg_power - cpu_power_step, -cpu_power_step):
+    #for pkg_power in cpu_ranges:
+            for dram_power in range(max_dram_power, min_dram_power - mem_power_step, -mem_power_step):
+                ret.append(ExperimentConfig(cpufreq, pkg_power, dram_power, 0, 0, 0, 0, 250, threads))
+    return ret
+
+
+MIN_GPU_POWER=125
+MAX_GPU_POWER=300
+
+spatial_step = 10
+def generate_spatial_gpu_experiments(gpu):
+    # Default to max CPU frequency
+    ret = []
+    cpufreq = ExperimentConfig.get_max_cpu_freq()
+    for perc in range(spatial_step, 101, spatial_step):
+        ret.append(ExperimentConfig(cpufreq, -1, -1, default_SM_freq(gpu), default_memory_freq(gpu), 0, 0, MAX_GPU_POWER, perc))
+    print (ret)
+    return ret
+
+def generate_gpu_experiments(gpu):
+    global MIN_GPU_POWER
+    global MAX_GPU_POWER
+
+    ret = []
+    # Step by 10 except min
+    gpu_pow_range = [] # [MIN_GPU_POWER] + list(range(130, MAX_GPU_POWER+1, 10))
+
+    if gpu is GPUType.titanv or  gpu is GPUType.titanxp:
+        MIN_GPU_POWER=125
+        MAX_GPU_POWER=300
+        gpu_pow_range = [MIN_GPU_POWER] + list(range(130, MAX_GPU_POWER+1, 10))
+    elif gpu is GPUType.v10032:
+        MIN_GPU_POWER=150
+        MAX_GPU_POWER=300
+        gpu_pow_range = list(range(MIN_GPU_POWER, MAX_GPU_POWER+1, 10))
+
+    # Default to max CPU frequency
+    cpufreq = ExperimentConfig.get_max_cpu_freq()
+    for perc in range(40, 101, 20):
+        for gpup in gpu_pow_range:
+            for moff in mem_offset_range(gpu):
+                # FIXME these numbers are for titanv
+                ret.append(ExperimentConfig(cpufreq, -1, -1, default_SM_freq(gpu), default_memory_freq(gpu), 0, moff, gpup, perc))
+                #print(perc)
+    #sys.exit()
+    return ret
+
+def generate_experiments(gpu):
+    return generate_cpu_experiments(), generate_gpu_experiments(gpu)
+
+class GPUType(Enum):
+    titanv = auto(),
+    titanxp = auto(),
+    v10032 = auto()
+
+class Experiment:
+    monitor = None
+    def __init__(self, appstr, sizestr, classtr, path, args):
+        self.appstr = appstr
+        self.sizestr = sizestr
+        self.classtr = classtr
+        self.command = sh.Command(path)
+        self.path = path
+        self.args = args
+
+    def __str__(self):
+        return f"{self.appstr}\n{self.path}\n{self.args}\n"
+
+
+    def run_spatial(self, exp_config, gputype):
+        outdir = f"{self.appstr}-{self.sizestr}-{self.classtr}-spatial"
+        try:
+            os.makedirs(outdir)
+        except OSError as e:
+            if e.errno != errno.EEXIST:
+                raise
+
+        outfile= f"{outdir}/results-{exp_config.pkg_pcap}_{exp_config.dram_pcap}_{exp_config.gpu_pcap}_{exp_config.sm_offset}_{exp_config.gpu_memory_offset}_{exp_config.spatial_perc}.csv"
+        if os.path.exists(outfile):
+            eprint(f"Skipping {outfile}; already exists")
+        else:
+            with open(outfile, "w+") as of:
+                sh.nvidia_cuda_mps_control("-d")
+                time.sleep(2)
+                os.environ["CUDA_MPS_ACTIVE_THREAD_PERCENTAGE"] = str(exp_config.spatial_perc)
+
+                of.write(str(self))
+                of.write(str(exp_config))
+                of.write(nvgpu.gpu_info()[0]['type'] + "\n")
+                of.flush()
+                exp_config.set_experiment_config(gputype)
+                monitor_process = Experiment.monitor(_bg=True, _out=of)
+                outp = self.command(*self.args)
+                #kill hack because process was started as root
+                sh.sudo("kill", "-s", "SIGINT", str(monitor_process.pid))
+                sleep(2)
+                of.write(f"FOOTER\n{str(outp)}")
+
+                os.system("echo quit | nvidia-cuda-mps-control")
+                time.sleep(2)
+
+
+    def run(self, exp_config, gputype):
+        outdir = f"{self.appstr}-{self.sizestr}-{self.classtr}"
+        try:
+            os.makedirs(outdir)
+        except OSError as e:
+            if e.errno != errno.EEXIST:
+                raise
+
+        #outfile= f"{outdir}/results-{exp_config.pkg_pcap}_{exp_config.dram_pcap}_{exp_config.gpu_pcap}_{exp_config.sm_offset}_{exp_config.gpu_memory_offset}.csv"
+        outfile= f"{outdir}/results-{exp_config.pkg_pcap}_{exp_config.dram_pcap}_{exp_config.gpu_pcap}_{exp_config.sm_offset}_{exp_config.gpu_memory_offset}_{exp_config.spatial_perc}.csv"
+        print ("Starting", outfile)
+        if os.path.exists(outfile):
+            eprint(f"Skipping {outfile}; already exists")
+        else:
+            with open(outfile, "w+") as of:
+                if "gpu" in self.classtr:
+                    if exp_config.spatial_perc < 100:
+                        sh.nvidia_cuda_mps_control("-d")
+                        time.sleep(2)
+                        os.environ["CUDA_MPS_ACTIVE_THREAD_PERCENTAGE"] = str(exp_config.spatial_perc)
+                else:
+                    os.environ["OPENBLAS_NUM_THREADS"] = str(exp_config.spatial_perc)
+                    os.environ["OMP_NUM_THREADS"] = str(exp_config.spatial_perc)
+                of.write(str(self))
+                of.write(str(exp_config))
+                of.write(nvgpu.gpu_info()[0]['type'] + "\n")
+                of.flush()
+                exp_config.set_experiment_config(gputype)
+                monitor_process = Experiment.monitor(_bg=True, _out=of)
+                outp = self.command(*self.args)
+                #kill hack because process was started as root
+                
+                while psutil.pid_exists(monitor_process.pid):
+                    sh.sudo("kill", "-s", "SIGINT", str(monitor_process.pid))
+                    time.sleep(1)
+                sh.sudo.sync()
+                of.write(f"FOOTER\n{str(outp)}")
+                if "gpu" in self.classtr:
+                    if exp_config.spatial_perc < 100:
+                        os.system("echo quit | nvidia-cuda-mps-control")
+                        time.sleep(1)
+                        del os.environ["CUDA_MPS_ACTIVE_THREAD_PERCENTAGE"]
+                else:
+                    del os.environ["OPENBLAS_NUM_THREADS"]
+                    del os.environ["OMP_NUM_THREADS"]
+        print ("Finished", outfile)
+
+ONE_HOUR_US = int(60 * 60 * 1E6)
+ONE_MIN_US = int(60 * 1E6)
+THREE_SEC_US = int(3 * 1E6)
+class ExperimentConfig:
+    def __init__(self, cpu_freq, pkg_pcap, dram_pcap, sm_clock, gpu_mem_clock, sm_offset, gpu_memory_offset, gpu_pcap, spatial_perc=100):
+        self.cpu_freq = cpu_freq
+        self.pkg_pcap = pkg_pcap
+        self.dram_pcap = dram_pcap
+        self.sm_clock = sm_clock
+        self.gpu_mem_clock = gpu_mem_clock
+        self.sm_offset = sm_offset
+        self.gpu_memory_offset = gpu_memory_offset
+        self.gpu_pcap = gpu_pcap
+        self.spatial_perc = spatial_perc
+
+    def __str__(self):
+        return f"{self.cpu_freq}\n{self.pkg_pcap}\n{self.dram_pcap}\n{self.sm_clock}\n{self.gpu_mem_clock}\n{self.sm_offset}\n{self.gpu_memory_offset}\n{self.gpu_pcap}\n{self.spatial_perc}\n"
+
+    def set_experiment_config(self, gputype):
+        self.set_cpu_freq()
+        self.set_sm_clock(gputype)
+        self.set_gpu_memclock()
+        self.set_sm_offset(gputype)
+        self.set_gpu_memclock_offset(gputype)
+        self.set_cpu_freq()
+        self.set_caps()
+        #self.set_pkg_cap()
+        #self.set_dram_cap()
+        self.set_gpu_pcap()
+
+    def set_cpu_freq(self):
+        num_cpus = sh.grep("-c", "processor", "/proc/cpuinfo")
+        for i in range(num_cpus):
+            with open(f"/sys/devices/system/cpu/cpu{i}/cpufreq/scaling_setspeed", "w+") as of:
+                of.write(self.cpu_freq)
+
+    @shprint
+    def set_sm_clock(self, gputype):
+        if gputype is GPUType.titanv:
+            if self.sm_clock == -1:
+                #FIXME one gpu
+                return sh.sudo("nvidia-smi", "--cuda-clocks=0", "-i", "0")
+            else:
+                return sh.sudo("nvidia-smi", "--cuda-clocks=1", "-i", "0")
+        pass
+
+    def set_gpu_memclock(self):
+        pass
+
+    # TODO: these functions do not support multi-gpu; i.e. they only affect gpu 1
+    # also should probably be sudo?
+    @shprint
+    def set_sm_offset(self, gputype):
+        if gputype == GPUType.titanv:
+            return sh.nvidia_settings("-a", f"[gpu:0]/GPUGraphicsClockOffset[2]={self.sm_offset}")
+        elif gputype == GPUType.titanxp:
+            return sh.nvidia_settings("-a", f"[gpu:0]/GPUGraphicsClockOffset[3]={self.sm_offset}")
+        elif gputype == GPUType.v10032:
+            # FIXME
+            return sh.nvidia_settings("-a", f"[gpu:0]/GPUGraphicsClockOffset[2]={self.sm_offset}")
+        else:
+            raise ValueError
+
+    #FIXME should probably be sudo
+    @shprint
+    def set_gpu_memclock_offset(self, gputype):
+        if gputype == GPUType.titanv:
+            return sh.nvidia_settings("-a", f"[gpu:0]/GPUMemoryTransferRateOffset[2]={self.sm_offset}")
+        elif gputype == GPUType.titanxp:
+            return sh.nvidia_settings("-a", f"[gpu:0]/GPUMemoryTransferRateOffset[3]={self.sm_offset}")
+            #raise NotImplementedError
+        elif gputype == GPUType.v10032:
+            #FIXME
+            return sh.nvidia_settings("-a", f"[gpu:0]/GPUGraphicsClockOffset[2]={self.sm_offset}")
+        else:
+            raise ValueError
+        pass
+
+    # GPU0 only
+    @shprint
+    def set_gpu_pcap(self):
+        return sh.sudo("nvidia-smi", "-i", "0", "-pl", f"{self.gpu_pcap}")
+
+    #FIXME these should probably be sudo
+    @shprint
+    def set_cpu_freq(self):
+        return sh.sudo(f"{toolpath}/cpufreq-set", str(self.cpu_freq))
+        #return sh.sudo("../../tools/power_tools/cpufreq-set", str(self.cpu_freq))
+    
+
+    @shprint
+    def set_caps(self):
+        buf = StringIO()
+        sh.sudo(f"{toolpath}/powercap-info", "intel-rapl", "-n", _out=buf)
+        #sh.sudo("../../tools/power_tools/powercap-info", "intel-rapl", "-n", _out=buf)
+
+        for zone in range(0, int(buf.getvalue())):
+            sh.sudo(f"{toolpath}/powercap-set", "intel-rapl", "-z", str(zone), "-e", "0")
+            if self.pkg_pcap != -1:
+                sh.sudo(f"{toolpath}/powercap-set", "intel-rapl", "-z", str(zone), "-c", "0", "-l", str(int(max_pkg_power_long * 1e6)), "-s", str(ONE_HOUR_US))
+                sh.sudo(f"{toolpath}/powercap-set", "intel-rapl", "-z", str(zone), "-c", "1", "-l", str(int(self.pkg_pcap * 1e6)), "-s", str(THREE_SEC_US))
+                sh.sudo(f"{toolpath}/powercap-set", "intel-rapl", "-z", str(zone), "-e", "1")
+                #sh.sudo("../../tools/power_tools/powercap-set", "intel-rapl", "-z", str(zone), "-j")
+            # {zone}:0 should be dram plane generally....
+            sh.sudo(f"{toolpath}/powercap-set", "intel-rapl", "-z", f"{zone}:0", "-e", "0")
+            if self.dram_pcap != -1:
+                sh.sudo(f"{toolpath}/powercap-set", "intel-rapl", "-z", f"{zone}:0", "-c", "0", "-l", str(int(self.dram_pcap * 1e6)), "-s", str(THREE_SEC_US))
+                #sh.sudo("../../tools/power_tools/powercap-set", "intel-rapl", "-z", f"{zone}:0", "-c", "1", "-l", str(int(self.dram_pcap * 1e6)), "-s", str(THREE_SEC_US))
+                sh.sudo(f"{toolpath}/powercap-set", "intel-rapl", "-z", f"{zone}:0", "-e", "1")
+                #sh.sudo("../../tools/power_tools/powercap-set", "intel-rapl", "-z", f"{zone}:0", "-j")
+
+
+#    @shprint
+#    def set_pkg_cap(self):
+#        return sh.sudo("../../tools/power_tools/mu_power_gadget", "-p", f"{self.pkg_pcap}")
+
+#    @shprint
+#    def set_dram_cap(self):
+#        return sh.sudo("../../tools/power_tools/mu_power_gadget", "-r", f"{self.dram_pcap}")
+
+    @staticmethod
+    def get_max_cpu_freq():
+        return sh.sudo(f"{toolpath}/cpufreq-avail").__str__().strip().split()[0]
+
+    @staticmethod
+    def get_default_experiment_config():
+        cpu = ExperimentConfig.get_max_cpu_freq()
+        return ExperimentConfig(cpu, -1, -1, -1, -1, 0, 0, 250)
+
+
+def set_env():
+    #mklroot = "/home/share/intel/mkl"
+    #os.environ["LD_LIBRARY_PATH"] = os.environ.get("LD_LIBRARY_PATH", "") + f":{mklroot}/lib/intel64"
+    #os.environ["LD_RUN_PATH"] = os.environ.get("LD_RUN_PATH", "") + f":{mklroot}/lib/intel64"
+    #os.environ["RUN_PATH"] = os.environ.get("RUN_PATH", "") + f":{mklroot}/lib/intel64"
+
+    if os.path.exists("/var/run/lightdm"):
+        os.environ["XAUTHORITY"] = "/var/run/lightdm/root/:0"
+    elif os.path.exists("/var/run/slim.auth"):
+        os.environ["XAUTHORITY"] = "/var/run/slim.auth"
+    else:
+        print("Couldn't find XAUTHORITY auth key - quitting")
+        sys.exit()
+    os.environ["DISPLAY"] = ":0"
+    os.environ["PATH"] = os.environ.get("PATH", "") + f":{os.getcwd()}/../../tools/power_tools/"
+    sh.sudo.xhost("+")
+    global toolpath
+    toolpath = f"{os.getcwd()}/../../tools/power_tools/"
+    Experiment.monitor = sh.sudo.bake(f"{toolpath}/../rapl-gpu-reader/monitor")
+
+# FIXME: FIRST GPU ONLY FOR NOW
+def get_gpu_type():
+    gpu_info = nvgpu.gpu_info()[0]
+    gputype = None
+    if "TITAN Xp" in gpu_info['type']:
+        gputype = GPUType.titanxp
+    elif "TITAN V" in gpu_info['type']:
+        gputype = GPUType.titanv
+    elif "Tesla V100-SXM2-32GB" in gpu_info['type']:
+        gputype = GPUType.v10032
+    else:
+        print("Unknown gpu type:", gpu_info);
+    return gputype
+
+def main():
+    set_env()
+    gpu = get_gpu_type()
+    default = ExperimentConfig.get_default_experiment_config()
+
+    default.set_experiment_config(gpu)
+
+
+if __name__ == "__main__":
+    main()

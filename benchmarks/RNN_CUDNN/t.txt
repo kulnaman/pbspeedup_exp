@@ -1,0 +1,8 @@
+Execution Time(s) Forward: 0.318426
+Execution Time(s) Backward: 0.468406
+Execution Time(s) Total: 0.786832
+Forward: 809 GFLOPS
+Backward: 1100 GFLOPS, (870 GFLOPS), (1496 GFLOPS)
+i checksum 2.019671E+07     h checksum 1.001502E+06
+di checksum 5.405939E+02    dh checksum 2.748762E+03
+dw checksum 1.558008E+08

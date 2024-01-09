@@ -1,0 +1,21 @@
+<function GPUExperimentConfig.set_sm_clock at 0x7fcfc0a70940>
+All done.
+
+<function GPUExperimentConfig.set_sm_offset at 0x7fcfc0a70af0>
+
+  Attribute 'GPUGraphicsClockOffset' (deepgreen:0[gpu:0]) assigned value
+  0.
+
+
+<function GPUExperimentConfig.set_gpu_memclock_offset at 0x7fcfc0a70c10>
+sm_offset 0
+
+  Attribute 'GPUMemoryTransferRateOffset' (deepgreen:0[gpu:0]) assigned
+  value 0.
+
+
+<function GPUExperimentConfig.set_gpu_pcap at 0x7fcfc0a70d30>
+0
+Power limit for GPU 00000000:21:00.0 was set to 250.00 W from 130.00 W.
+All done.
+

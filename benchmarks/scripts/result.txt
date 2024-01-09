@@ -1,0 +1,2 @@
+Forward: 283 GFLOPS
+Backward: 308 GFLOPS, (282 GFLOPS), (339 GFLOPS)

@@ -1,0 +1,5 @@
+H: 38  W: 38  C: 256  N: 32
+H: 38  W: 38  C: 324  N: 32
+H: 3  W: 3 C: 256  K: 324
+OUT VALUES: 38 38 324 32
+WORKSPACE SIZE: FWD_DIRECT                   CUDNN failure: CUDNN_STATUS_NOT_SUPPORTED in src/benchmark.cu at line: 37

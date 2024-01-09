@@ -1,0 +1,15 @@
+#!/bin/bash
+
+if [ -f ./YAML_Doc.cpp ] ; then
+  exit 0;
+fi
+
+dir=../common
+
+rsync --checksum ${dir}/YAML_Doc.cpp .
+rsync --checksum ${dir}/YAML_Doc.hpp .
+rsync --checksum ${dir}/YAML_Element.cpp .
+rsync --checksum ${dir}/YAML_Element.hpp .
+
+rsync --checksum ${dir}/generate_info_header .
+

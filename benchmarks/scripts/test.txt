@@ -1,0 +1,344 @@
++ unset _mlshdbg
++ '[' 0 = 1 ']'
++ unset _mlre _mlIFS
++ '[' -n x ']'
++ _mlIFS=' 	
+'
++ IFS=' '
++ '[' -n '' ']'
+++ /usr/bin/tclsh8.6 /usr/lib/x86_64-linux-gnu/modulecmd.tcl bash autoinit
++ _mlcode='module() {
+   unset _mlshdbg;
+   if [ "${MODULES_SILENT_SHELL_DEBUG:-0}" = '\''1'\'' ]; then
+      case "$-" in
+         *v*x*) set +vx; _mlshdbg='\''vx'\'' ;;
+         *v*) set +v; _mlshdbg='\''v'\'' ;;
+         *x*) set +x; _mlshdbg='\''x'\'' ;;
+         *) _mlshdbg='\'''\'' ;;
+      esac;
+   fi;
+   unset _mlre _mlIFS;
+   if [ -n "${IFS+x}" ]; then
+      _mlIFS=$IFS;
+   fi;
+   IFS='\'' '\'';
+   for _mlv in ${MODULES_RUN_QUARANTINE:-}; do
+      if [ "${_mlv}" = "${_mlv##*[!A-Za-z0-9_]}" -a "${_mlv}" = "${_mlv#[0-9]}" ]; then
+         if [ -n "`eval '\''echo ${'\''$_mlv'\''+x}'\''`" ]; then
+            _mlre="${_mlre:-}${_mlv}_modquar='\''`eval '\''echo ${'\''$_mlv'\''}'\''`'\'' ";
+         fi;
+         _mlrv="MODULES_RUNENV_${_mlv}";
+         _mlre="${_mlre:-}${_mlv}='\''`eval '\''echo ${'\''$_mlrv'\'':-}'\''`'\'' ";
+      fi;
+   done;
+   if [ -n "${_mlre:-}" ]; then
+      eval `eval ${_mlre}/usr/bin/tclsh8.6 /usr/lib/x86_64-linux-gnu/modulecmd.tcl bash '\''"$@"'\''`;
+   else
+      eval `/usr/bin/tclsh8.6 /usr/lib/x86_64-linux-gnu/modulecmd.tcl bash "$@"`;
+   fi;
+   _mlstatus=$?;
+   if [ -n "${_mlIFS+x}" ]; then
+      IFS=$_mlIFS;
+   else
+      unset IFS;
+   fi;
+   unset _mlre _mlv _mlrv _mlIFS;
+   if [ -n "${_mlshdbg:-}" ]; then
+      set -$_mlshdbg;
+   fi;
+   unset _mlshdbg;
+   return $_mlstatus;
+};
+MODULES_CMD=/usr/lib/x86_64-linux-gnu/modulecmd.tcl; export MODULES_CMD;
+ENV=/usr/share/modules/init/profile.sh; export ENV;
+BASH_ENV=/usr/share/modules/init/bash; export BASH_ENV;
+MODULESHOME=/usr/share/lmod/lmod; export MODULESHOME;
+test 0;'
++ _mlret=0
++ '[' -n x ']'
++ IFS=' 	
+'
++ unset _mlIFS
++ unset _mlre _mlv _mlrv
++ '[' 0 -eq 0 ']'
++ eval 'module() {
+   unset _mlshdbg;
+   if [ "${MODULES_SILENT_SHELL_DEBUG:-0}" = '\''1'\'' ]; then
+      case "$-" in
+         *v*x*) set +vx; _mlshdbg='\''vx'\'' ;;
+         *v*) set +v; _mlshdbg='\''v'\'' ;;
+         *x*) set +x; _mlshdbg='\''x'\'' ;;
+         *) _mlshdbg='\'''\'' ;;
+      esac;
+   fi;
+   unset _mlre _mlIFS;
+   if [ -n "${IFS+x}" ]; then
+      _mlIFS=$IFS;
+   fi;
+   IFS='\'' '\'';
+   for _mlv in ${MODULES_RUN_QUARANTINE:-}; do
+      if [ "${_mlv}" = "${_mlv##*[!A-Za-z0-9_]}" -a "${_mlv}" = "${_mlv#[0-9]}" ]; then
+         if [ -n "`eval '\''echo ${'\''$_mlv'\''+x}'\''`" ]; then
+            _mlre="${_mlre:-}${_mlv}_modquar='\''`eval '\''echo ${'\''$_mlv'\''}'\''`'\'' ";
+         fi;
+         _mlrv="MODULES_RUNENV_${_mlv}";
+         _mlre="${_mlre:-}${_mlv}='\''`eval '\''echo ${'\''$_mlrv'\'':-}'\''`'\'' ";
+      fi;
+   done;
+   if [ -n "${_mlre:-}" ]; then
+      eval `eval ${_mlre}/usr/bin/tclsh8.6 /usr/lib/x86_64-linux-gnu/modulecmd.tcl bash '\''"$@"'\''`;
+   else
+      eval `/usr/bin/tclsh8.6 /usr/lib/x86_64-linux-gnu/modulecmd.tcl bash "$@"`;
+   fi;
+   _mlstatus=$?;
+   if [ -n "${_mlIFS+x}" ]; then
+      IFS=$_mlIFS;
+   else
+      unset IFS;
+   fi;
+   unset _mlre _mlv _mlrv _mlIFS;
+   if [ -n "${_mlshdbg:-}" ]; then
+      set -$_mlshdbg;
+   fi;
+   unset _mlshdbg;
+   return $_mlstatus;
+};
+MODULES_CMD=/usr/lib/x86_64-linux-gnu/modulecmd.tcl; export MODULES_CMD;
+ENV=/usr/share/modules/init/profile.sh; export ENV;
+BASH_ENV=/usr/share/modules/init/bash; export BASH_ENV;
+MODULESHOME=/usr/share/lmod/lmod; export MODULESHOME;
+test 0;'
+++ MODULES_CMD=/usr/lib/x86_64-linux-gnu/modulecmd.tcl
+++ export MODULES_CMD
+++ ENV=/usr/share/modules/init/profile.sh
+++ export ENV
+++ BASH_ENV=/usr/share/modules/init/bash
+++ export BASH_ENV
+++ MODULESHOME=/usr/share/lmod/lmod
+++ export MODULESHOME
+++ test 0
++ '[' 0 = 1 ']'
++ '[' -t 2 ']'
++ export -f module
++ export -f switchml
++ '[' 5 -ge 3 ']'
++ [[ ehxB =~ i ]]
++ [[ ! :/home/nkulshr/.pyenv/plugins/pyenv-virtualenv/shims:/home/nkulshr/.pyenv/shims:/home/nkulshr/.pyenv/bin:/home/nkulshr/.local/bin:/home/nkulshr/.pyenv/plugins/pyenv-virtualenv/shims:/home/nkulshr/.pyenv/shims:/home/nkulshr/.pyenv/bin:/opt/conda/condabin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/opt/puppetlabs/bin: =~ :/usr/bin: ]]
++ '[' '!' -n x ']'
+++ manpath
++ [[ ! :/home/nkulshr/.pyenv/man:/home/nkulshr/.local/share/man:/opt/conda/man:/opt/conda/share/man:/usr/local/man:/usr/local/share/man:/usr/share/man:/opt/puppetlabs/puppet/share/man: =~ :/usr/share/man: ]]
++ unset _mlcode _mlret
++ '[' -n '' ']'
++ python ./conv-powerf.py -iter 1000
+Skipping conv--gpu/results--1_-1_125_0_0_100.csv; already exists
+Skipping conv--gpu/results--1_-1_125_0_50_100.csv; already exists
+Skipping conv--gpu/results--1_-1_125_0_100_100.csv; already exists
+Skipping conv--gpu/results--1_-1_125_0_150_100.csv; already exists
+Skipping conv--gpu/results--1_-1_125_0_200_100.csv; already exists
+Skipping conv--gpu/results--1_-1_125_0_250_100.csv; already exists
+Skipping conv--gpu/results--1_-1_125_0_300_100.csv; already exists
+Skipping conv--gpu/results--1_-1_125_0_350_100.csv; already exists
+Skipping conv--gpu/results--1_-1_125_0_400_100.csv; already exists
+Skipping conv--gpu/results--1_-1_125_0_450_100.csv; already exists
+Skipping conv--gpu/results--1_-1_125_0_500_100.csv; already exists
+Skipping conv--gpu/results--1_-1_130_0_0_100.csv; already exists
+Skipping conv--gpu/results--1_-1_130_0_50_100.csv; already exists
+Skipping conv--gpu/results--1_-1_130_0_100_100.csv; already exists
+Skipping conv--gpu/results--1_-1_130_0_150_100.csv; already exists
+Skipping conv--gpu/results--1_-1_130_0_200_100.csv; already exists
+Skipping conv--gpu/results--1_-1_130_0_250_100.csv; already exists
+Skipping conv--gpu/results--1_-1_130_0_300_100.csv; already exists
+Skipping conv--gpu/results--1_-1_130_0_350_100.csv; already exists
+Skipping conv--gpu/results--1_-1_130_0_400_100.csv; already exists
+Skipping conv--gpu/results--1_-1_130_0_450_100.csv; already exists
+Skipping conv--gpu/results--1_-1_130_0_500_100.csv; already exists
+Skipping conv--gpu/results--1_-1_140_0_0_100.csv; already exists
+Skipping conv--gpu/results--1_-1_140_0_50_100.csv; already exists
+Skipping conv--gpu/results--1_-1_140_0_100_100.csv; already exists
+Skipping conv--gpu/results--1_-1_140_0_150_100.csv; already exists
+Skipping conv--gpu/results--1_-1_140_0_200_100.csv; already exists
+Skipping conv--gpu/results--1_-1_140_0_250_100.csv; already exists
+Skipping conv--gpu/results--1_-1_140_0_300_100.csv; already exists
+Skipping conv--gpu/results--1_-1_140_0_350_100.csv; already exists
+Skipping conv--gpu/results--1_-1_140_0_400_100.csv; already exists
+Skipping conv--gpu/results--1_-1_140_0_450_100.csv; already exists
+Skipping conv--gpu/results--1_-1_140_0_500_100.csv; already exists
+Skipping conv--gpu/results--1_-1_150_0_0_100.csv; already exists
+Skipping conv--gpu/results--1_-1_150_0_50_100.csv; already exists
+Skipping conv--gpu/results--1_-1_150_0_100_100.csv; already exists
+Skipping conv--gpu/results--1_-1_150_0_150_100.csv; already exists
+Skipping conv--gpu/results--1_-1_150_0_200_100.csv; already exists
+Skipping conv--gpu/results--1_-1_150_0_250_100.csv; already exists
+Skipping conv--gpu/results--1_-1_150_0_300_100.csv; already exists
+Skipping conv--gpu/results--1_-1_150_0_350_100.csv; already exists
+Skipping conv--gpu/results--1_-1_150_0_400_100.csv; already exists
+Skipping conv--gpu/results--1_-1_150_0_450_100.csv; already exists
+Skipping conv--gpu/results--1_-1_150_0_500_100.csv; already exists
+Skipping conv--gpu/results--1_-1_160_0_0_100.csv; already exists
+<function GPUExperimentConfig.set_sm_clock at 0x7fe5e6350940>
+All done.
+
+<function GPUExperimentConfig.set_sm_offset at 0x7fe5e6350af0>
+
+  Attribute 'GPUGraphicsClockOffset' (deepgreen:0[gpu:0]) assigned value
+  0.
+
+
+<function GPUExperimentConfig.set_gpu_memclock_offset at 0x7fe5e6350c10>
+sm_offset 0
+
+  Attribute 'GPUMemoryTransferRateOffset' (deepgreen:0[gpu:0]) assigned
+  value 0.
+
+
+<function GPUExperimentConfig.set_gpu_pcap at 0x7fe5e6350d30>
+0
+Power limit for GPU 00000000:21:00.0 was set to 250.00 W from 170.00 W.
+All done.
+
+Starting GPU experiments
+Starting conv--gpu/results--1_-1_125_0_0_100.csv
+Finished conv--gpu/results--1_-1_125_0_0_100.csv
+Starting conv--gpu/results--1_-1_125_0_50_100.csv
+Finished conv--gpu/results--1_-1_125_0_50_100.csv
+Starting conv--gpu/results--1_-1_125_0_100_100.csv
+Finished conv--gpu/results--1_-1_125_0_100_100.csv
+Starting conv--gpu/results--1_-1_125_0_150_100.csv
+Finished conv--gpu/results--1_-1_125_0_150_100.csv
+Starting conv--gpu/results--1_-1_125_0_200_100.csv
+Finished conv--gpu/results--1_-1_125_0_200_100.csv
+Starting conv--gpu/results--1_-1_125_0_250_100.csv
+Finished conv--gpu/results--1_-1_125_0_250_100.csv
+Starting conv--gpu/results--1_-1_125_0_300_100.csv
+Finished conv--gpu/results--1_-1_125_0_300_100.csv
+Starting conv--gpu/results--1_-1_125_0_350_100.csv
+Finished conv--gpu/results--1_-1_125_0_350_100.csv
+Starting conv--gpu/results--1_-1_125_0_400_100.csv
+Finished conv--gpu/results--1_-1_125_0_400_100.csv
+Starting conv--gpu/results--1_-1_125_0_450_100.csv
+Finished conv--gpu/results--1_-1_125_0_450_100.csv
+Starting conv--gpu/results--1_-1_125_0_500_100.csv
+Finished conv--gpu/results--1_-1_125_0_500_100.csv
+Starting conv--gpu/results--1_-1_130_0_0_100.csv
+Finished conv--gpu/results--1_-1_130_0_0_100.csv
+Starting conv--gpu/results--1_-1_130_0_50_100.csv
+Finished conv--gpu/results--1_-1_130_0_50_100.csv
+Starting conv--gpu/results--1_-1_130_0_100_100.csv
+Finished conv--gpu/results--1_-1_130_0_100_100.csv
+Starting conv--gpu/results--1_-1_130_0_150_100.csv
+Finished conv--gpu/results--1_-1_130_0_150_100.csv
+Starting conv--gpu/results--1_-1_130_0_200_100.csv
+Finished conv--gpu/results--1_-1_130_0_200_100.csv
+Starting conv--gpu/results--1_-1_130_0_250_100.csv
+Finished conv--gpu/results--1_-1_130_0_250_100.csv
+Starting conv--gpu/results--1_-1_130_0_300_100.csv
+Finished conv--gpu/results--1_-1_130_0_300_100.csv
+Starting conv--gpu/results--1_-1_130_0_350_100.csv
+Finished conv--gpu/results--1_-1_130_0_350_100.csv
+Starting conv--gpu/results--1_-1_130_0_400_100.csv
+Finished conv--gpu/results--1_-1_130_0_400_100.csv
+Starting conv--gpu/results--1_-1_130_0_450_100.csv
+Finished conv--gpu/results--1_-1_130_0_450_100.csv
+Starting conv--gpu/results--1_-1_130_0_500_100.csv
+Finished conv--gpu/results--1_-1_130_0_500_100.csv
+Starting conv--gpu/results--1_-1_140_0_0_100.csv
+Finished conv--gpu/results--1_-1_140_0_0_100.csv
+Starting conv--gpu/results--1_-1_140_0_50_100.csv
+Finished conv--gpu/results--1_-1_140_0_50_100.csv
+Starting conv--gpu/results--1_-1_140_0_100_100.csv
+Finished conv--gpu/results--1_-1_140_0_100_100.csv
+Starting conv--gpu/results--1_-1_140_0_150_100.csv
+Finished conv--gpu/results--1_-1_140_0_150_100.csv
+Starting conv--gpu/results--1_-1_140_0_200_100.csv
+Finished conv--gpu/results--1_-1_140_0_200_100.csv
+Starting conv--gpu/results--1_-1_140_0_250_100.csv
+Finished conv--gpu/results--1_-1_140_0_250_100.csv
+Starting conv--gpu/results--1_-1_140_0_300_100.csv
+Finished conv--gpu/results--1_-1_140_0_300_100.csv
+Starting conv--gpu/results--1_-1_140_0_350_100.csv
+Finished conv--gpu/results--1_-1_140_0_350_100.csv
+Starting conv--gpu/results--1_-1_140_0_400_100.csv
+Finished conv--gpu/results--1_-1_140_0_400_100.csv
+Starting conv--gpu/results--1_-1_140_0_450_100.csv
+Finished conv--gpu/results--1_-1_140_0_450_100.csv
+Starting conv--gpu/results--1_-1_140_0_500_100.csv
+Finished conv--gpu/results--1_-1_140_0_500_100.csv
+Starting conv--gpu/results--1_-1_150_0_0_100.csv
+Finished conv--gpu/results--1_-1_150_0_0_100.csv
+Starting conv--gpu/results--1_-1_150_0_50_100.csv
+Finished conv--gpu/results--1_-1_150_0_50_100.csv
+Starting conv--gpu/results--1_-1_150_0_100_100.csv
+Finished conv--gpu/results--1_-1_150_0_100_100.csv
+Starting conv--gpu/results--1_-1_150_0_150_100.csv
+Finished conv--gpu/results--1_-1_150_0_150_100.csv
+Starting conv--gpu/results--1_-1_150_0_200_100.csv
+Finished conv--gpu/results--1_-1_150_0_200_100.csv
+Starting conv--gpu/results--1_-1_150_0_250_100.csv
+Finished conv--gpu/results--1_-1_150_0_250_100.csv
+Starting conv--gpu/results--1_-1_150_0_300_100.csv
+Finished conv--gpu/results--1_-1_150_0_300_100.csv
+Starting conv--gpu/results--1_-1_150_0_350_100.csv
+Finished conv--gpu/results--1_-1_150_0_350_100.csv
+Starting conv--gpu/results--1_-1_150_0_400_100.csv
+Finished conv--gpu/results--1_-1_150_0_400_100.csv
+Starting conv--gpu/results--1_-1_150_0_450_100.csv
+Finished conv--gpu/results--1_-1_150_0_450_100.csv
+Starting conv--gpu/results--1_-1_150_0_500_100.csv
+Finished conv--gpu/results--1_-1_150_0_500_100.csv
+Starting conv--gpu/results--1_-1_160_0_0_100.csv
+Finished conv--gpu/results--1_-1_160_0_0_100.csv
+Starting conv--gpu/results--1_-1_160_0_50_100.csv
+<function GPUExperimentConfig.set_sm_clock at 0x7fe5e6350940>
+Overriding clock
+All done.
+
+<function GPUExperimentConfig.set_sm_offset at 0x7fe5e6350af0>
+
+  Attribute 'GPUGraphicsClockOffset' (deepgreen:0[gpu:0]) assigned value
+  0.
+
+
+<function GPUExperimentConfig.set_gpu_memclock_offset at 0x7fe5e6350c10>
+sm_offset 50
+
+  Attribute 'GPUMemoryTransferRateOffset' (deepgreen:0[gpu:0]) assigned
+  value 50.
+
+
+<function GPUExperimentConfig.set_gpu_pcap at 0x7fe5e6350d30>
+0
+Power limit for GPU 00000000:21:00.0 was set to 160.00 W from 250.00 W.
+All done.
+
+Traceback (most recent call last):
+  File "/home/nkulshr/power_bound_speedup/experiment/benchmarks/scripts/./conv-powerf.py", line 46, in <module>
+    main()
+  File "/home/nkulshr/power_bound_speedup/experiment/benchmarks/scripts/./conv-powerf.py", line 39, in main
+    exp.run(ec)
+  File "/home/nkulshr/power_bound_speedup/experiment/benchmarks/scripts/./experiment.py", line 257, in run
+    outp = self.command(*self.args)
+  File "/home/nkulshr/.pyenv/versions/pbspeedup/lib/python3.10/site-packages/sh.py", line 1524, in __call__
+    return RunningCommand(cmd, call_args, stdin, stdout, stderr)
+  File "/home/nkulshr/.pyenv/versions/pbspeedup/lib/python3.10/site-packages/sh.py", line 788, in __init__
+    self.wait()
+  File "/home/nkulshr/.pyenv/versions/pbspeedup/lib/python3.10/site-packages/sh.py", line 845, in wait
+    self.handle_command_exit_code(exit_code)
+  File "/home/nkulshr/.pyenv/versions/pbspeedup/lib/python3.10/site-packages/sh.py", line 869, in handle_command_exit_code
+    raise exc
+sh.ErrorReturnCode_1: 
+
+  RAN: /home/nkulshr/power_bound_speedup/experiment/benchmarks/cudnn-benchmark/run.sh 1000
+
+  STDOUT:
+running experiment
+Done
+
+
+  STDERR:
+Traceback (most recent call last):
+  File "/home/nkulshr/power_bound_speedup/experiment/benchmarks/cudnn-benchmark/parse_result/parser.py", line 20, in <module>
+    main()
+  File "/home/nkulshr/power_bound_speedup/experiment/benchmarks/cudnn-benchmark/parse_result/parser.py", line 18, in main
+    print(f"Execution Time(s) one iter(s): {execution_time*1e-6}\n Total Execution time(s):{execution_time*1e-6*ite}\n Problem Size(MB): {size/1048576.0}")
+TypeError: can't multiply sequence by non-int of type 'float'
+
